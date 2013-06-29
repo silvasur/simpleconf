@@ -26,6 +26,7 @@ package simpleconf
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -105,6 +106,17 @@ func Load(r io.Reader) (config Config, outerr error) {
 
 	outerr = scanner.Err()
 	return
+}
+
+// LoadByFilename behaves like Load, but will open the file for you.
+func LoadByFilename(fn string) (Config, error) {
+	f, err := os.Open(fn)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	return Load(f)
 }
 
 // Errors of the `Get...` functions.
@@ -209,4 +221,20 @@ func (c Config) GetFile(flag int, perm os.FileMode, section, key string) (*os.Fi
 // GetFileReadonly is like GetFile, but with default values for flag and perm that will open the file in read-only mode.
 func (c Config) GetFileReadonly(section, key string) (*os.File, error) {
 	return c.GetFile(os.O_RDONLY, 0, section, key)
+}
+
+// GetFileContent reads the content of the file with the name in the config and returns the content.
+func (c Config) GetFileContent(section, key string) ([]byte, error) {
+	f, err := c.GetFileReadonly(section, key)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	buf := new(bytes.Buffer)
+	if _, err := io.Copy(buf, f); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
