@@ -45,9 +45,13 @@ func Load(r io.Reader) (config Config, outerr error) {
 			if len(parts[1]) != 0 {
 				return nil, fmt.Errorf("More data after closing ']' at line %d", l)
 			}
+			if len(parts[0]) == 0 {
+				return nil, fmt.Errorf("Empty section name at line %d", l)
+			}
 
 			config.addSection(section, sectName)
 			section = make(Section)
+			sectName = parts[0]
 		default:
 			parts := strings.SplitN(line, "=", 2)
 			if len(parts) != 2 {
